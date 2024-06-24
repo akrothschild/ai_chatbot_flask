@@ -10,9 +10,10 @@ import uuid
 from flask import redirect, render_template, request, session
 from functools import wraps
 
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from pyapplesignin import AppleSignIn
 
 
@@ -95,6 +96,42 @@ def usd(value):
     return f"${value:,.2f}"
 
 
+def login_helper(db, request):
+    # Handle form login as per existing logic
+    if request.form.get("username") and request.form.get("password"):
+        return login_via_form(db, request)
+
+    # Handle Apple login
+    elif request.form.get("apple_token"):
+        return login_via_apple(db, request)
+
+    # Handle Google login
+    elif request.form.get("google_token"):
+        return login_via_google(db, request)
+
+    # Handle invalid or missing credentials
+    else:
+        return apology("must provide username and password or Apple token", 403)
+
+
+def login_via_form(db, request):
+    username = request.form.get("username")
+    password = request.form.get("password")
+
+    # Query database for username
+    rows = db.execute("SELECT * FROM users WHERE username = ?", username)
+
+    # Ensure username exists and password is correct
+    if len(rows) != 1 or not check_password_hash(rows[0]["hash"], password):
+        return apology("invalid username and/or password", 403)
+
+    # Remember which user has logged in
+    session["user_id"] = rows[0]["id"]
+
+    # Redirect user to home page
+    return redirect("/")
+
+
 '''
 ========================
 GENERATE REGISTRATION
@@ -165,7 +202,7 @@ def register_via_apple(db, request):
         # Check if the user already exists in your database
         existing_user = db.execute("SELECT * FROM users WHERE apple_user_id = ?", apple_user_id).fetchone()
         if existing_user:
-            return apology("Apple account already linked to another user", 400)
+            return login_via_apple(db, request)
 
         # Create a new user record in your database
         try:
@@ -182,6 +219,35 @@ def register_via_apple(db, request):
         return apology("Apple token validation failed: " + str(e), 400)
 
 
+def login_via_apple(db, request):
+    apple_token = request.form.get("apple_token")
+
+    # Initialize AppleSignIn with your client ID and client secret
+    apple_signin = AppleSignIn(client_id='your_client_id', team_id='your_team_id', redirect_uri='your_redirect_uri',
+                               key_id='your_key_id', key_file_path='path_to_your_private_key_file.pem')
+
+    try:
+        # Validate and decode the Apple ID token
+        decoded_token = apple_signin.validate_id_token(apple_token)
+        apple_user_id = decoded_token.get('sub')
+
+        # Query database for Apple user
+        rows = db.execute("SELECT * FROM users WHERE apple_user_id = ?", apple_user_id)
+
+        # Ensure Apple user exists
+        if len(rows) != 1:
+            return apology("Apple account not linked to any user", 403)
+
+        # Remember which user has logged in
+        session["user_id"] = rows[0]["id"]
+
+        # Redirect user to home page
+        return redirect("/")
+
+    except Exception as e:
+        return apology("Apple token validation failed: " + str(e), 403)
+
+
 def register_via_google(db, request):
     # Handle registration via Google OAuth
 
@@ -190,7 +256,7 @@ def register_via_google(db, request):
 
     try:
         # Verify the Google ID token
-        id_info = google_token.verify_oauth2_token(google_token, google_requests.Request())
+        id_info = id_token.verify_oauth2_token(google_token, google_requests.Request())
 
         # Extract user details
         if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
@@ -217,3 +283,95 @@ def register_via_google(db, request):
 
     except ValueError as e:
         return apology("Google token validation failed: " + str(e), 400)
+
+
+def login_via_google(db, request):
+    google_token = request.form.get("google_token")
+
+    try:
+        # Verify the Google ID token
+        id_info = id_token.verify_oauth2_token(google_token, google_requests.Request())
+
+        # Extract user details
+        if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            raise ValueError('Invalid issuer.')
+
+        google_user_id = id_info['sub']
+
+        # Query database for Google user
+        rows = db.execute("SELECT * FROM users WHERE google_user_id = ?", google_user_id)
+
+        # Ensure Google user exists
+        if len(rows) != 1:
+            return apology("Google account not linked to any user", 403)
+
+        # Remember which user has logged in
+        session["user_id"] = rows[0]["id"]
+
+        # Redirect user to home page
+        return redirect("/")
+
+    except ValueError as e:
+        return apology("Google token validation failed: " + str(e), 403)
+
+
+# Function to create tables if they don't exist
+def create_tables_if_not_exist(db):
+    # SQL statements for table creation
+    sql_queries = [
+        """CREATE TABLE IF NOT EXISTS Users (
+               user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+               username VARCHAR(50) UNIQUE,
+               email VARCHAR(100) UNIQUE,
+               password_hash VARCHAR(100),
+               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+           );""",
+
+        """CREATE TABLE IF NOT EXISTS Chats (
+               chat_id INTEGER PRIMARY KEY AUTOINCREMENT,
+               chat_name VARCHAR(100),
+               user_id INTEGER,
+               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+               FOREIGN KEY (user_id) REFERENCES Users (user_id)
+           );""",
+
+        """CREATE TABLE IF NOT EXISTS Messages (
+               message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+               chat_id INTEGER,
+               user_id INTEGER,
+               message_text TEXT,
+               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+               FOREIGN KEY (chat_id) REFERENCES Chats (chat_id),
+               FOREIGN KEY (user_id) REFERENCES Users (user_id)
+           );"""
+    ]
+
+    try:
+        # Connect to SQLite database
+        conn = sqlite3.connect(db)
+        cursor = conn.cursor()
+
+        # Execute each SQL statement
+        for query in sql_queries:
+            cursor.execute(query)
+
+        # Commit changes and close connection
+        conn.commit()
+        conn.close()
+
+        print("Tables created successfully!")
+
+    except sqlite3.Error as e:
+        print(f"Error creating tables: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+
+def index_helper(db):
+    user_id = session["user_id"]
+    transactions = db.execute("")
+    username_db = db.execute("SELECT username FROM users WHERE id = ?", user_id)
+    username = username_db[0]["username"]
+
+    return render_template("index.html")

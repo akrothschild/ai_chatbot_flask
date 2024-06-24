@@ -21,7 +21,7 @@ MODEL_LIST = [
     # MNPL
     "codestral-latest",
 ]
-DEFAULT_MODEL = "codestral-latest"
+DEFAULT_MODEL = "open-mistral-7b"
 DEFAULT_TEMPERATURE = 0.7
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 # A dictionary of all commands and their arguments, used for tab completion.

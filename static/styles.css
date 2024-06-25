@@ -21,3 +21,25 @@ nav .navbar-brand .green
 {
     color: #2e944b;
 }
+
+.nav-link {
+    color: white;
+}
+
+.nav-link .btn {
+    background-color: white;
+}
+p {
+    text-align: left;
+}
+
+/* styles.css */
+body {
+    background-color: #343a40; /* Dark background color */
+    color: #ffffff; /* Light text color */
+}
+.navbar {
+    background-color: #212529 !important; /* Dark navbar background color */
+}
+
+

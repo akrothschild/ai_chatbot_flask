@@ -27,8 +27,7 @@
 
 <nav class="bg-light border navbar navbar-expand-md navbar-light">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/"><span class="blue">C</span><span class="red">$</span><span
-                class="yellow">5</span><span class="green">0</span> <span class="red">Finance</span></a>
+        <a class="navbar-brand" href="/"><span class="red">CS50</span><span class="blue">Chatbot</span></a>
         <button aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler"
                 data-bs-target="#navbar" data-bs-toggle="collapse" type="button">
             <span class="navbar-toggler-icon"></span>
@@ -41,11 +40,14 @@
             <ul class="navbar-nav ms-auto mt-2">
                 <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
             </ul>
+
             {% else %}
             <ul class="navbar-nav ms-auto mt-2">
                 <li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
                 <li class="nav-item"><a class="nav-link" href="/login">Log In</a></li>
             </ul>
+
+
             {% endif %}
         </div>
     </div>
@@ -65,9 +67,6 @@
 
 <footer class="mb-5">
 
-    <p class="mb-3 small text-center text-muted">
-        Data provided by <a href="https://finance.yahoo.com/">Yahoo</a>
-    </p>
 
     <form action="https://validator.w3.org/check" class="text-center" enctype="multipart/form-data" method="post"
           target="_blank">
@@ -86,6 +85,15 @@
                 '>\n' + document.documentElement.outerHTML;
             document.querySelector('form[action="https://validator.w3.org/check"] > input[name="fragment"]').value = html;
         });
+
+        function toggleDarkMode() {
+            var link = document.getElementById('bootstrap-styles');
+            if (link.href.includes('bootstrap.min.css')) {
+                link.href = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.dark.min.css';
+            } else {
+                link.href = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
+            }
+        }
     </script>
 </footer>
 

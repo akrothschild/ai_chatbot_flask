@@ -4,6 +4,7 @@ import os
 import readline
 import sys
 
+from cs50 import SQL
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 
@@ -40,6 +41,8 @@ LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 
 logger = logging.getLogger("chatbot")
 
+db = SQL("sqlite:///chat.db")
+
 
 def find_completions(command_dict, parts):
     if not parts:
@@ -75,12 +78,14 @@ class ChatBot:
         self.model = model
         self.temperature = temperature
         self.system_message = system_message
+        self.messages = []
+        if self.system_message:
+            self.messages.append(ChatMessage(role="system", content=self.system_message))
 
     def opening_instructions(self):
         print(
 
-
-"""
+            """
 To chat: type your message and hit enter
 To start a new chat: /new
 To switch model: /model <model name>
@@ -154,11 +159,20 @@ To see this help: /help
             if response is not None:
                 print(response, end="", flush=True)
                 assistant_response += response
-
         print("", flush=True)
 
         if assistant_response:
             self.messages.append(ChatMessage(role="assistant", content=assistant_response))
+            # last_chat = db.execute("SELECT * FROM Chats ORDER BY created_at DESC LIMIT 1")
+            # if not last_chat:
+            #     db.execute("INSERT INTO Chats (chat_name, user_id) VALUES (?, ?)", "New Chat", 1)
+            #
+            # last_chat_id = db.execute("SELECT chat_id FROM Chats ORDER BY created_at DESC LIMIT 1")
+            # if last_chat:
+            #     # Retrieve messages for the last created chat
+            #     db.execute("INSERT INTO Messages (chat_id, user_id, message_text) VALUES (?, ?, ?)", last_chat_id[0]["chat_id"], 1,
+            #                self.messages)
+
         logger.debug(f"Current messages: {self.messages}")
 
     def get_command(self, input):

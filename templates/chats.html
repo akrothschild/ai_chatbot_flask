@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Chats
+{% endblock %}
+
+{% block main %}
+<div class="container">
+    <h1 class="mt-5">Your Chats</h1>
+    <ul class="list-group mt-4">
+        {% for chat in chats %}
+        <li class="list-group-item">
+            <a href="{{ url_for('chat', chat_id=chat.chat_id) }}">{{ chat.chat_name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+    <form method="post">
+        <button type="submit" class="btn btn-primary">Start Chat</button>
+    </form>
+</div>
+{% endblock %}

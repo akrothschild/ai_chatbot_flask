@@ -79,8 +79,10 @@ class ChatBot:
         self.temperature = temperature
         self.system_message = system_message
         self.messages = []
+        self.message_list = []
         if self.system_message:
             self.messages.append(ChatMessage(role="system", content=self.system_message))
+            self.message_list.append({"role": "system", "message_text": self.system_message})
 
     def opening_instructions(self):
         print(
@@ -102,8 +104,10 @@ To see this help: /help
         print(f"Starting new chat with model: {self.model}, temperature: {self.temperature}")
         print("")
         self.messages = []
+        self.message_list = []
         if self.system_message:
             self.messages.append(ChatMessage(role="system", content=self.system_message))
+            self.message_list.append({"role": "system", "message_text": self.system_message})
 
     def switch_model(self, input):
         model = self.get_arguments(input)
@@ -150,6 +154,7 @@ To see this help: /help
         print("")
 
         self.messages.append(ChatMessage(role="user", content=content))
+        self.message_list.append({"role": "user", "message_text": content})
 
         assistant_response = ""
         logger.debug(f"Running inference with model: {self.model}, temperature: {self.temperature}")
@@ -163,6 +168,7 @@ To see this help: /help
 
         if assistant_response:
             self.messages.append(ChatMessage(role="assistant", content=assistant_response))
+            self.message_list.append({"role": "assistant", "message_text": assistant_response})
             # last_chat = db.execute("SELECT * FROM Chats ORDER BY created_at DESC LIMIT 1")
             # if not last_chat:
             #     db.execute("INSERT INTO Chats (chat_name, user_id) VALUES (?, ?)", "New Chat", 1)

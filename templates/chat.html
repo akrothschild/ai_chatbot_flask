@@ -20,11 +20,11 @@ Register
         {% for message in messages %}
         <div class="message">
             {% if message.role == 'user' %}
-            <p><strong class="text-primary">YOU:</strong> {{ message.message_text }}</p>
+            <p><strong class="text-primary">YOU:</strong> {{ message.content }}</p>
             {% elif message.role == 'assistant' %}
-            <p><strong class="text-success">CS50:</strong> {{ message.message_text }}</p>
+            <p><strong class="text-success">CS50:</strong> {{ message.content }}</p>
             {% elif message.role == 'system' %}
-            <p><strong class="text-warning">SYSTEM:</strong> {{ message.message_text }}</p>
+            <p><strong class="text-warning">SYSTEM:</strong> {{ message.content }}</p>
             {% endif %}
         </div>
         {% endfor %}

@@ -4,6 +4,8 @@ import json
 
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for
+from mistralai.models.chat_completion import ChatMessage
+
 from flask_session import Session
 
 from chatbot import ChatBot, DEFAULT_MODEL, DEFAULT_TEMPERATURE
@@ -158,23 +160,46 @@ def chat():
                 last_chat_id = db1.execute("SELECT chat_id FROM Chats ORDER BY created_at DESC LIMIT 1")
                 if last_chat:
                     # Retrieve messages for the last created chat
-                    messages = db1.execute("SELECT message_text, role FROM Messages WHERE chat_id = ?",
-                                           last_chat_id[0]["chat_id"])
-                    if messages:
-                        if len(messages) < len(bot.messages):
-                            messages = bot.messages
+                    db_messages = []
+                    db_messages = db1.execute("SELECT message_text, role FROM Messages WHERE chat_id = ?",
+                                              last_chat_id[0]["chat_id"])
+                    for message in bot.messages:
+                        l = {"message_text": message.content, "role": message.role}
+                        if l not in db_messages:
+                            db_messages.append(l)
                             db1.execute(
                                 "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                                last_chat_id[0]["chat_id"], user_id, bot.messages[-2].content, bot.messages[-2].role)
-                            db1.execute(
-                                "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                                last_chat_id[0]["chat_id"], user_id, bot.messages[-1].content, bot.messages[-1].role)
-                    else:
-                        db1.execute(
-                            "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                            last_chat_id[0]["chat_id"], user_id, "", "user")
+                                last_chat_id[0]["chat_id"], user_id, message.content, message.role)
+                    for message in db_messages:
+                        if message["message_text"] not in [msg.content for msg in bot.messages]:
+                            bot.messages.append(ChatMessage(role=message["role"], content=message["message_text"]))
+                        # messages = bot.messages
+                        # # db1.execute(
+                        # #     "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
+                        # #     last_chat_id[0]["chat_id"], user_id, bot.messages[-2].content, bot.messages[-2].role)
+                        # # db1.execute(
+                        # #     "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
+                        # #     last_chat_id[0]["chat_id"], user_id, bot.messages[-1].content, bot.messages[-1].role)
+                        # str1 = ""
+                        # str1 = str(bot.messages[-2].model_dump_json())
+                        # print(str1)
+                        # str2 = ""
+                        # str2 = str(bot.messages[-1].model_dump_json())
+                        # print(str2)
+                        # db1.execute(
+                        #     "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
+                        #     last_chat_id[0]["chat_id"], user_id, bot.messages[-2].content,
+                        #     bot.messages[-2].role)
+                        # db1.execute(
+                        #     "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
+                        #     last_chat_id[0]["chat_id"], user_id, bot.messages[-1].content,
+                        #     bot.messages[-1].role)
+                    # else:
+                    #     db1.execute(
+                    #         "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
+                    #         last_chat_id[0]["chat_id"], user_id, "", "user")
 
-        return render_template('chat.html', messages=messages)
+        return render_template('chat.html', messages=bot.messages)
     elif request.method == 'POST':
         if 'user_input' in request.form:
             user_input = request.form['user_input']

@@ -37,6 +37,9 @@ db1 = SQL("sqlite:///chat.db")
 # Call the function to create tables
 create_tables_if_not_exist(db1)
 
+# Initialize current chat control variable
+current_chat_id = 0
+
 
 class User(db.Model):
     __tablename__ = 'Users'
@@ -62,6 +65,7 @@ class Message(db.Model):
     chat_id = db.Column(db.Integer, db.ForeignKey('Chats.chat_id'))
     user_id = db.Column(db.Integer, db.ForeignKey('Users.user_id'))
     message_text = db.Column(db.Text)
+    role = db.Column(db.String(20), nullable=False)
     created_at = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     chat = db.relationship('Chat', backref=db.backref('messages', lazy=True))
     user = db.relationship('User', backref=db.backref('messages', lazy=True))
@@ -83,8 +87,12 @@ def after_request(response):
 
 @app.route("/")
 def index():
-    """Show portfolio of stocks"""
-    return index_helper(db)
+    if 'user_id' in session:
+        user_id = session['user_id']
+        user = db1.execute("SELECT username FROM Users WHERE user_id = ?", user_id)
+        if user:
+            return redirect(url_for("chats"))
+    return render_template("index.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -96,7 +104,7 @@ def login():
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
-        return login_helper(SQL("sqlite:///chat.db"), request)
+        return login_helper(db1, request)
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -124,82 +132,61 @@ def register():
         return render_template("register.html")
 
 
-@app.route('/chats')
+@app.route('/chats', methods=['GET', 'POST'])
 @login_required
 def chats():
     if 'user_id' in session:
         user_id = session['user_id']
-        user = User.query.get(user_id)
+        user = db1.execute("SELECT username FROM Users WHERE user_id = ?", user_id)
         if user:
-            if request.method == 'POST':
-                chat_name = "New chat"
-                new_chat = Chat(chat_name=chat_name, user_id=user_id)
-                db.session.add(new_chat)
-                db.session.commit()
-                flash('New chat created successfully!', 'success')
-                return redirect(url_for('/chat'))
-            else:
-                chats = user.chats
-                return render_template('chats.html', chats=chats)
+            user_chats = db1.execute("SELECT chat_id, chat_name FROM chats WHERE user_id = ? ORDER BY created_at DESC", user_id)
+            return render_template('chats.html', chats=user_chats)
         else:
             return "User not found", 404
     else:
         return "Unauthorized access", 401
 
 
-@app.route('/chat', methods=['GET', 'POST'])
-def chat():
+@app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
+def do_chat(chat_id):
     global bot
+    global current_chat_id
 
+    if chat_id != current_chat_id:
+        bot.new_chat()
+    current_chat_id = chat_id
     if request.method == 'GET':
         if 'user_id' in session:
             user_id = session['user_id']
             user = db1.execute("SELECT username FROM Users WHERE user_id = ?", user_id)
             if user:
-                last_chat = db1.execute("SELECT * FROM Chats ORDER BY created_at DESC LIMIT 1")
-                last_chat_id = db1.execute("SELECT chat_id FROM Chats ORDER BY created_at DESC LIMIT 1")
-                if last_chat:
+                user_chats = db1.execute("SELECT chat_id, chat_name FROM chats WHERE user_id = ? ORDER BY created_at DESC", user_id)
+                selected_chat = db1.execute("SELECT * FROM Chats WHERE Chats.chat_id = ? ORDER BY created_at DESC "
+                                            "LIMIT 1", chat_id)
+                if selected_chat:
                     # Retrieve messages for the last created chat
-                    db_messages = []
-                    db_messages = db1.execute("SELECT message_text, role FROM Messages WHERE chat_id = ?",
-                                              last_chat_id[0]["chat_id"])
+                    db_messages = db1.execute(
+                        "SELECT message_text, role FROM Messages WHERE chat_id = ? AND user_id = ?",
+                        chat_id, user_id)
                     for message in bot.messages:
                         l = {"message_text": message.content, "role": message.role}
                         if l not in db_messages:
                             db_messages.append(l)
                             db1.execute(
                                 "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                                last_chat_id[0]["chat_id"], user_id, message.content, message.role)
+                                chat_id, user_id, message.content, message.role)
+                            new_chat_name = db1.execute(
+                                "SELECT message_text FROM messages WHERE chat_id = ? AND user_id = ? AND role = "
+                                "'user' ORDER BY created_at DESC LIMIT 1",
+                                chat_id, user_id)
+                            db1.execute("UPDATE chats SET chat_name = ? WHERE chat_id = ? AND user_id = ?",
+                                        new_chat_name[0]["message_text"], chat_id, user_id)
                     for message in db_messages:
                         if message["message_text"] not in [msg.content for msg in bot.messages]:
                             bot.messages.append(ChatMessage(role=message["role"], content=message["message_text"]))
-                        # messages = bot.messages
-                        # # db1.execute(
-                        # #     "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                        # #     last_chat_id[0]["chat_id"], user_id, bot.messages[-2].content, bot.messages[-2].role)
-                        # # db1.execute(
-                        # #     "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                        # #     last_chat_id[0]["chat_id"], user_id, bot.messages[-1].content, bot.messages[-1].role)
-                        # str1 = ""
-                        # str1 = str(bot.messages[-2].model_dump_json())
-                        # print(str1)
-                        # str2 = ""
-                        # str2 = str(bot.messages[-1].model_dump_json())
-                        # print(str2)
-                        # db1.execute(
-                        #     "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                        #     last_chat_id[0]["chat_id"], user_id, bot.messages[-2].content,
-                        #     bot.messages[-2].role)
-                        # db1.execute(
-                        #     "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                        #     last_chat_id[0]["chat_id"], user_id, bot.messages[-1].content,
-                        #     bot.messages[-1].role)
-                    # else:
-                    #     db1.execute(
-                    #         "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
-                    #         last_chat_id[0]["chat_id"], user_id, "", "user")
-
-        return render_template('chat.html', messages=bot.messages)
+        else:
+            user_chats = [{"chat_id": 0, "chat_name": "New Chat"}]
+        return render_template('chat.html', chat_id=chat_id, messages=bot.messages, chats=user_chats)
     elif request.method == 'POST':
         if 'user_input' in request.form:
             user_input = request.form['user_input']
@@ -207,8 +194,50 @@ def chat():
                 return redirect(url_for('index'))
             if bot.is_command(user_input):
                 bot.execute_command(user_input)
-                return redirect(url_for('chat'))
             else:
                 bot.run_inference(user_input)
-                return redirect(url_for('chat'))
+        return redirect(url_for('do_chat', chat_id=chat_id))
     bot.exit()
+
+
+@app.route('/start_chat', methods=['GET'])
+def start_chat():
+    # Handle starting a new chat logic here
+    # Redirect to a new chat page or handle form submission
+    chat_id = 0
+    chat_name = "New chat"
+    bot.new_chat()
+    if 'user_id' in session:
+        user_id = session['user_id']
+        user = db1.execute("SELECT username FROM Users WHERE user_id = ?", user_id)
+        if user:
+            db1.execute("INSERT INTO chats (chat_name, user_id) VALUES (?, ?)", chat_name, user_id)
+            flash('New chat created successfully!', 'success')
+            chat_id = db1.execute(
+                "SELECT chat_id FROM Chats WHERE chat_name = ? AND user_id = ? ORDER BY created_at DESC LIMIT 1",
+                chat_name, user_id)
+            return redirect(url_for('do_chat', chat_id=int(chat_id[0]['chat_id'])))
+    return redirect(url_for('do_chat', chat_id=chat_id))
+
+
+@app.route('/delete_chat', methods=['POST'])
+def delete_chat():
+    global current_chat_id
+    if 'user_id' in session:
+        user_id = session['user_id']
+        user = db1.execute("SELECT username FROM Users WHERE user_id = ?", user_id)
+        if user:
+            db1.execute("DELETE FROM messages WHERE chat_id = ? AND user_id = ?", current_chat_id, user_id)
+            db1.execute("DELETE FROM chats WHERE chat_id = ? AND user_id = ?", current_chat_id, user_id)
+            flash('Deleted successfully!', 'success')
+            chat_id = db1.execute(
+                "SELECT chat_id FROM Chats WHERE user_id = ? ORDER BY created_at DESC LIMIT 1", user_id)
+            bot.new_chat()
+            if chat_id:
+                current_chat_id = int(chat_id[0]['chat_id'])
+            else:
+                current_chat_id = 0
+            return redirect(url_for('do_chat', chat_id=current_chat_id))
+    chat_id = 0;
+    bot.new_chat()
+    return redirect(url_for('do_chat', chat_id=chat_id))

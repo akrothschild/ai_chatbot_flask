@@ -2,16 +2,20 @@
 nav .navbar-brand
 {
     font-size: xx-large;
+    background-color: transparent;
 }
 
 /* Colors for brand */
 nav .navbar-brand .blue
 {
     color: #537fbe;
+    background-color: transparent;
+
 }
 nav .navbar-brand .red
 {
     color: #ea433b;
+    background-color: transparent;
 }
 nav .navbar-brand .yellow
 {
@@ -29,6 +33,10 @@ nav .navbar-brand .green
 .nav-link .btn {
     background-color: white;
 }
+
+.nav-item {
+    background-color: transparent;
+}
 p {
     text-align: left;
 }
@@ -42,4 +50,99 @@ body {
     background-color: #212529 !important; /* Dark navbar background color */
 }
 
+ul {
+    color: #343a40;
+    background-color: #343a40; /* Dark background color */
+    font-size: large;
+}
 
+a {
+    background-color: #343a40; /* Dark background color */
+    color: #ffffff; /* Light text color */
+    font-size: large;
+}
+
+.list-group-item{
+    background-color: #343a40; /* Dark background color */
+    font-size: large;
+    border-color: transparent;
+}
+.list-group-item:hover {
+    background-color: #414950; /* Change this to your desired hover color */
+}
+
+
+.full-height {
+    height: 75vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.chat-container-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+.chat-list {
+    flex: 0 0 20%; /* Occupies 1/5 of the screen width */
+    overflow-y: auto;
+    border-right: 1px solid #ddd;
+    padding: 1rem;
+}
+
+/* Webkit browsers (Chrome, Safari, etc.) */
+.chat-list::-webkit-scrollbar {
+    width: 2px; /* Width of the scrollbar */
+}
+
+.chat-list::-webkit-scrollbar-thumb {
+    background-color: #888; /* Color of the scrollbar thumb */
+}
+
+/* Microsoft Edge and Internet Explorer */
+.chat-list {
+    -ms-overflow-style: none; /* Hide scrollbar */
+}
+
+.chat-list:hover {
+    -ms-overflow-style: scrollbar; /* Show scrollbar on hover */
+}
+
+.chat-container {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+/* Webkit browsers (Chrome, Safari, etc.) */
+.chat-container::-webkit-scrollbar {
+    width: 2px; /* Width of the scrollbar */
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+    background-color: #888; /* Color of the scrollbar thumb */
+}
+
+/* Microsoft Edge and Internet Explorer */
+.chat-container {
+    -ms-overflow-style: none; /* Hide scrollbar */
+}
+
+.chat-container:hover {
+    -ms-overflow-style: scrollbar; /* Show scrollbar on hover */
+}
+
+
+.form-container {
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    padding: 1rem;
+    border-top: 1px solid #ddd;
+}
+
+.btn-delete {
+    background-color: red;
+}

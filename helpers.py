@@ -358,6 +358,7 @@ def create_tables_if_not_exist(db):
                chat_id INTEGER,
                user_id INTEGER,
                message_text TEXT,
+               role TEXT,
                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                FOREIGN KEY (chat_id) REFERENCES Chats (chat_id),
                FOREIGN KEY (user_id) REFERENCES Users (user_id)
@@ -383,6 +384,8 @@ def create_tables_if_not_exist(db):
         print(f"Error creating tables: {e}")
 
 
-def index_helper(db):
-    # user_id = session["user_id"]
+def index_helper(user_id):
+
+    if user_id:
+        render_template("chats.html")
     return render_template("index.html")

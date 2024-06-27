@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Register
+{% endblock %}
+
+{% block main %}
+<h1>Welcome to the CS50 ChatBot!</h1>
+<form action="{{ url_for('start_chat') }}" method="get">
+    <button type="submit" class="btn btn-primary">Start a New Chat</button>
+</form>
+{% endblock %}

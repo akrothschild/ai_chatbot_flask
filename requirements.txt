@@ -1,5 +1,9 @@
-cs50
-Flask
+cs50~=9.3.4
+Flask~=3.0.3
 Flask-Session
-pytz
-requests
+pytz~=2024.1
+requests~=2.32.3
+
+Werkzeug~=3.0.3
+mistralai~=0.4.1
+google~=3.0.0

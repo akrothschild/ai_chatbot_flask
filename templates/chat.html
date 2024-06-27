@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Register
+{% endblock %}
+
+{% block main %}
+<div class="container full-height">
+    <h1 class="mt-5">CS50 Chat</h1>
+
+    <div class="chat-container-wrapper my-4">
+        <!-- Chat list container -->
+        <div id="chat-list" class="chat-list">
+            <ul id="chat-list-ul" class="list-group mt-4">
+                {% for chat in chats %}
+                <li class="list-group-item">
+                    <a href="{{ url_for('do_chat', chat_id=chat.chat_id) }}">{{ chat.chat_name }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Chat messages container -->
+        <div id="chat-container" class="chat-container">
+            {% for message in messages %}
+            <div class="message">
+                {% if message.role == 'user' %}
+                <p><strong class="text-primary">YOU:</strong> {{ message.content }}</p>
+                {% elif message.role == 'assistant' %}
+                <p><strong class="text-success">CS50:</strong> {{ message.content }}</p>
+                {% elif message.role == 'system' %}
+                <p><strong class="text-warning">SYSTEM:</strong> {{ message.content }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Input form container -->
+    <div class="form-container">
+        <form action="{{ url_for('do_chat', chat_id=chat_id) }}" method="post" class="my-4">
+            <div class="input-group">
+                <input type="text" name="user_input" id="user_input" class="form-control" autocomplete="off">
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </div>
+            </div>
+        </form>
+
+        <form action="{{ url_for('start_chat') }}" method="get">
+            <button type="submit" class="btn btn-primary">Start a New Chat</button>
+        </form>
+
+        <form action="{{ url_for('delete_chat') }}" method="post">
+            <button type="submit" class="btn btn-danger btn-sm mt-3">Delete Current Chat</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Scroll chat-list and chat-container to bottom on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        var chatContainer = document.getElementById('chat-container');
+
+        // Scroll chat-container to bottom
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    });
+</script>
+{% endblock %}

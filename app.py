@@ -156,7 +156,7 @@ def do_chat(chat_id):
                 user_chats = db.execute(
                     "SELECT chat_id, chat_name FROM chats WHERE user_id = ? ORDER BY created_at DESC", user_id)
                 selected_chat = db.execute("SELECT * FROM Chats WHERE Chats.chat_id = ? ORDER BY created_at DESC "
-                                            "LIMIT 1", chat_id)
+                                           "LIMIT 1", chat_id)
                 if selected_chat:
                     # Retrieve messages for the last created chat
                     db_messages = db.execute(
@@ -169,7 +169,8 @@ def do_chat(chat_id):
                             db.execute(
                                 "INSERT INTO messages (chat_id, user_id, message_text, role) VALUES (?, ?, ?, ?)",
                                 chat_id, user_id, message.content, message.role)
-                            logger.info(f'Inserted into messages: chat_id: {chat_id} for user: {user_id} message: {message.content} role: {message.role}')
+                            logger.info(
+                                f'Inserted into messages: chat_id: {chat_id} for user: {user_id} message: {message.content} role: {message.role}')
                             new_chat_name = db.execute(
                                 "SELECT message_text FROM messages WHERE chat_id = ? AND user_id = ? AND role = "
                                 "'user' ORDER BY created_at DESC LIMIT 1",
@@ -239,3 +240,7 @@ def delete_chat():
     chat_id = 0;
     bot.new_chat()
     return redirect(url_for('do_chat', chat_id=chat_id))
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

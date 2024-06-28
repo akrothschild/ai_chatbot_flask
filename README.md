@@ -4,8 +4,6 @@
 
 #### [Github](https://github.com/akrothschild/ai_chatbot_flask)
 
-#### Video Demo: [Watch the Demo](https://youtu.be/c8CJcVMfHpk)
-
 #### Description: CS50 AI Chatbot built on Flask using Mistral AI
 
 ### Overview
